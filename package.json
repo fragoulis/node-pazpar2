@@ -25,9 +25,11 @@
   },
   "homepage": "https://github.com/jfragoulis/node-pazpar2",
   "dependencies": {
+    "q": "^1.0.1",
+    "underscore": "^1.7.0",
     "xml2js": "^0.4.4"
   },
   "devDependencies": {
-    "mocha": "^1.21.4",
+    "mocha": "^1.21.4"
   }
 }
