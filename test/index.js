@@ -4,7 +4,7 @@ var assert = require('assert');
 describe('Parpar2', function() {
 
   var pz2 = new Pazpar2({
-    session: '2130136065',
+    session: '2260237',
     terms: ['subject', 'author_070'],
   });
 
@@ -24,8 +24,8 @@ describe('Parpar2', function() {
     });
   });
 
-  it('searches for "ti=saint john"', function(done) {
-    pz2.search("ti=saint john").then(function(o) {
+  it('searches for "ti=saint"', function(done) {
+    pz2.search("george").then(function(o) {
       setTimeout(done, 1800);
     }, function(err) {
       done(err);
@@ -34,7 +34,6 @@ describe('Parpar2', function() {
 
   it('stats for last search', function(done) {
     pz2.stat().then(function(o) {
-      console.log(o);
       done();
     }, function(err) {
       done(err);
@@ -52,7 +51,6 @@ describe('Parpar2', function() {
 
   it('shows termlist', function(done) {
     pz2.termlist().then(function(o) {
-      console.log(o);
       done();
     }, function(err) {
       done(err);

@@ -55,6 +55,7 @@ var get = function(query) {
     http.get(options, function(response) {
       response.on('data', function(data) {
         xml.parseString(data, function(err, result) {
+
           if (result.error) {
             reject(new Error(util.format('Pazpar2 (%s): %s [%s]', result.error.$.code, result.error.$.msg, querystring.stringify(query))));
           } else {
@@ -312,7 +313,7 @@ var TermList = function(result) {
     for(var idxItem in items) {
 
       var item = {};
-      item[items[idxItem].name[0]] = items[idxItem].frequency[0];
+      item[items[idxItem].name[0]] = parseInt(items[idxItem].frequency[0]);
 
       this[termName].push(item);
     }
@@ -381,6 +382,7 @@ Pazpar2.prototype.safeInit = function() {
     return self.isSessionValid()
       .then(function(isValid) {
         if (isValid) {
+          console.info(util.format('Reusing session [%s].', self.session));
           resolve();
         } else {
           console.warn(util.format('Session [%s] is not valid. Creating a new one.', self.session));

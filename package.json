@@ -1,5 +1,5 @@
 {
-  "name": "node-pazpar2",
+  "name": "pazpar2",
   "version": "0.1.0",
   "description": "Pazpar2 client",
   "main": "index.js",
@@ -19,7 +19,12 @@
     "email": "john.fragkoulis@gmail.com",
     "url": "http://thecodingroom.wordpress.com/"
   },
-  "license": "ISC",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/jfragoulis/node-pazpar2/blob/master/LICENSE-MIT"
+    }
+  ],
   "bugs": {
     "url": "https://github.com/jfragoulis/node-pazpar2/issues"
   },
