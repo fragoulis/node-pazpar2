@@ -80,16 +80,14 @@ var isInitialized = function() {
 /**
  * Initialiazes a new session with the pz2 server.
  * 
- * @param  {array} options [description]
- * @return {Promise}       [description]
+ * @return {Promise}       
  */
-Pazpar2.prototype.init = function(params) {
+Pazpar2.prototype.init = function() {
 
-  // params = {
-  //   session: '',
-  //   keepAlive: '',
-  // }
-  
+  if (isInitialized.call(this)) {
+    throw new Error(util.format('Session is already set [%s]', this.session));
+  }
+
   var self = this;
   return q.Promise(function(resolve, reject) {
     
@@ -113,20 +111,26 @@ Pazpar2.prototype.init = function(params) {
 /**
  * Pings the pz2 to keep the session alive.
  * 
- * @param  {string} session The session to ping
+ * @param  {string} session The session to ping if using a different
+ *                          session to check that the object's
+ * @return {Promise}       
  */
-Pazpar2.prototype.ping = function() {
+Pazpar2.prototype.ping = function(session) {
   var self = this;
   return q.Promise(function(resolve, reject) {
     
     var params = {
       command: 'ping',
-      session: self.session
+      session: session || self.session
     };
 
     return get.call(self, params)
       .then(function(result) {
-        self.updatedAt = new Date().toUTCString();
+
+        // Unless we are pinging the object's session
+        // do not by mistake udpate the last ping date.
+        if (session === self.session)
+          self.updatedAt = new Date().toUTCString();
 
         resolve(result);
       }, reject);
@@ -136,7 +140,7 @@ Pazpar2.prototype.ping = function() {
 /**
  * [search description]
  * @param  {array|string} options [description]
- * @return {[type]}        [description]
+ * @return {Promise}       
  */
 Pazpar2.prototype.search = function(options) {
   var self = this;
@@ -144,9 +148,6 @@ Pazpar2.prototype.search = function(options) {
   // options = {
   //   query: '',
   //   filter: '',
-  //   onStat: function() {},
-  //   onShow: function() {},
-  //   onTerms: function() {}
   // }
 
   if (typeof options === 'string') {
@@ -184,31 +185,22 @@ Pazpar2.prototype.search = function(options) {
  * @return {[type]}        [description]
  */
 var StatObject = function(result) {
-  
-  // var stat = {};
-  // Object.keys(result.stat).forEach(function(key) {
-  //   var val = result.stat[key][0];
-  //   stat[key] = val;
-  // });
-  
-  return {
-    activeclients: parseInt(result.activeclients[0]),
-    hits: parseInt(result.hits[0]),
-    records: parseInt(result.records[0]),
-    clients: parseInt(result.clients[0]),
-    unconnected: parseInt(result.unconnected[0]),
-    connecting: parseInt(result.connecting[0]),
-    working: parseInt(result.working[0]),
-    idle: parseInt(result.idle[0]),
-    failed: parseInt(result.failed[0]),
-    error: parseInt(result.error[0]),
-    progress: parseFloat(result.progress[0])
-  };
+  this.activeclients = parseInt(result.activeclients[0]);
+  this.hits = parseInt(result.hits[0]);
+  this.records = parseInt(result.records[0]);
+  this.clients = parseInt(result.clients[0]);
+  this.unconnected = parseInt(result.unconnected[0]);
+  this.connecting = parseInt(result.connecting[0]);
+  this.working = parseInt(result.working[0]);
+  this.idle = parseInt(result.idle[0]);
+  this.failed = parseInt(result.failed[0]);
+  this.error = parseInt(result.error[0]);
+  this.progress = parseFloat(result.progress[0]);
 }
 
 /**
  * [stat description]
- * @return {[type]} [description]
+ * @return {Promise}       
  */
 Pazpar2.prototype.stat = function() {
   var self = this;
@@ -233,15 +225,13 @@ Pazpar2.prototype.stat = function() {
  */
 var ShowObject = function(result) {
 
-  var show = {};
-
-  show.status = result.status[0];
-  show.activeclients = parseInt(result.activeclients[0]);
-  show.merged = parseInt(result.merged[0]);
-  show.total = parseInt(result.total[0]);
-  show.start = parseInt(result.start[0]);
-  show.num = parseInt(result.num[0]);
-  show.hit = [];
+  this.status = result.status[0];
+  this.activeclients = parseInt(result.activeclients[0]);
+  this.merged = parseInt(result.merged[0]);
+  this.total = parseInt(result.total[0]);
+  this.start = parseInt(result.start[0]);
+  this.num = parseInt(result.num[0]);
+  this.hit = [];
 
   for(var idxHit in result.hit) {
     var newHit = {}
@@ -268,15 +258,13 @@ var ShowObject = function(result) {
       newHit.holdings.push(holding);
     }
 
-    show.hit.push(newHit);
+    this.hit.push(newHit);
   }
-
-  return show;
 }
 
 /**
  * [show description]
- * @return {[type]} [description]
+ * @return {Promise}       
  */
 Pazpar2.prototype.show = function(options) {
   var self = this
@@ -313,8 +301,28 @@ Pazpar2.prototype.show = function(options) {
 }
 
 /**
+ * [TermList description]
+ * @param {[type]} result [description]
+ */
+var TermList = function(result) {
+  for(var idx in result.termlist.list) {
+    var termName = result.termlist.list[idx].$.name
+      , items = result.termlist.list[idx].term;
+
+    this[termName] = [];
+    for(var idxItem in items) {
+
+      var item = {};
+      item[items[idxItem].name[0]] = items[idxItem].frequency[0];
+
+      this[termName].push(item);
+    }
+  }
+}
+
+/**
  * [termlist description]
- * @return {[type]} [description]
+ * @return {Promise}       
  */
 Pazpar2.prototype.termlist = function() {
   var self = this;
@@ -329,11 +337,63 @@ Pazpar2.prototype.termlist = function() {
 
     return get.call(self, params)
       .then(function(result) {
-        resolve(result);
+        var terms = new TermList(result);
+        resolve(terms);
       }, reject);
 
   });
 }
 
+/**
+ * A wrapper for ping that makes sense when checking 
+ * to see if a session is alive.
+ * 
+ * @param  {[type]}  session [description]
+ * @return {Boolean}         [description]
+ */
+Pazpar2.prototype.isSessionValid = function(session) {
+  var self = this;
+  return q.Promise(function(resolve) {
+    return self.ping(session || this.session)
+      .then(function() {
+        resolve(true);
+      }, function(e) {
+        resolve(false);
+      });
+  });
+} // isSessionValid
+
+/**
+ * Initialiazes a new session with the pz2 server but
+ * also handles an expired session.
+ * It checks for session validity and if not valid it creates a new session.
+ * 
+ * @return {Promise}       
+ */
+Pazpar2.prototype.safeInit = function() {
+
+  if (!isInitialized.call(this)) {
+    return this.init();
+  }
+
+  var self = this;
+  return q.Promise(function(resolve) {
+
+    return self.isSessionValid()
+      .then(function(isValid) {
+        if (isValid) {
+          resolve();
+        } else {
+          console.warn(util.format('Session [%s] is not valid. Creating a new one.', self.session));
+
+          // Invalidate the variable
+          self.session = null;
+
+          return self.init().then(resolve);
+        }
+      });
+
+  });
+} // safeInit
 
 module.exports = Pazpar2;

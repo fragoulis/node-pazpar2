@@ -5,11 +5,11 @@ describe('Parpar2', function() {
 
   var pz2 = new Pazpar2({
     session: '2130136065',
-    terms: ['subject']
+    terms: ['subject'],
   });
 
   it('initializes the connection', function(done) {
-    pz2.init().then(function(o) {
+    pz2.safeInit().then(function(o) {
       done();
     }, function(err) {
       done(err);
@@ -34,6 +34,7 @@ describe('Parpar2', function() {
 
   it('stats for last search', function(done) {
     pz2.stat().then(function(o) {
+      console.log(o);
       done();
     }, function(err) {
       done(err);
@@ -42,20 +43,20 @@ describe('Parpar2', function() {
 
   it('shows top records', function(done) {
     pz2.show().then(function(o) {
+      console.log(o);
       done();
     }, function(err) {
       done(err);
     });
   });
 
-  // it('shows termlist', function(done) {
-  //   pz2.termlist().then(function(o) {
-  //     // console.log(o.termlist.list[0].$);
-  //     // console.log(o.termlist.list[0].term);
-  //     done();
-  //   }, function(err) {
-  //     done(err);
-  //   });
-  // });
+  it('shows termlist', function(done) {
+    pz2.termlist().then(function(o) {
+      console.log(o);
+      done();
+    }, function(err) {
+      done(err);
+    });
+  });
 
 });
