@@ -5,7 +5,7 @@ describe('Parpar2', function() {
 
   var pz2 = new Pazpar2({
     session: '2130136065',
-    terms: ['subject'],
+    terms: ['subject', 'author_070'],
   });
 
   it('initializes the connection', function(done) {

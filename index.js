@@ -67,7 +67,7 @@ var get = function(query) {
     });
 
   });
-}
+} // get
 
 /**
  * [isInitialized description]
@@ -106,7 +106,7 @@ Pazpar2.prototype.init = function() {
         resolve(result);
       }, reject);
   });
-}
+} // init
 
 /**
  * Pings the pz2 to keep the session alive.
@@ -135,11 +135,12 @@ Pazpar2.prototype.ping = function(session) {
         resolve(result);
       }, reject);
   });  
-}
+} // ping
 
 /**
- * [search description]
- * @param  {array|string} options [description]
+ * Executes the search command.
+ * 
+ * @param  {array|string} options the search options.
  * @return {Promise}       
  */
 Pazpar2.prototype.search = function(options) {
@@ -177,12 +178,10 @@ Pazpar2.prototype.search = function(options) {
         resolve(result);
       }, reject);
   });
-}
+} // search
 
 /**
- * [createStatObject description]
- * @param  {[type]} result [description]
- * @return {[type]}        [description]
+ * The stat command's result object.
  */
 var StatObject = function(result) {
   this.activeclients = parseInt(result.activeclients[0]);
@@ -199,7 +198,8 @@ var StatObject = function(result) {
 }
 
 /**
- * [stat description]
+ * Executes the stat command.
+ * 
  * @return {Promise}       
  */
 Pazpar2.prototype.stat = function() {
@@ -217,11 +217,10 @@ Pazpar2.prototype.stat = function() {
         resolve(stat);
       }, reject);
   });
-}
+} // stat
 
 /**
- * [ShowObject description]
- * @param {[type]} result [description]
+ * The show command's result object.
  */
 var ShowObject = function(result) {
 
@@ -263,7 +262,8 @@ var ShowObject = function(result) {
 }
 
 /**
- * [show description]
+ * Executes the show command.
+ * 
  * @return {Promise}       
  */
 Pazpar2.prototype.show = function(options) {
@@ -298,11 +298,10 @@ Pazpar2.prototype.show = function(options) {
         resolve(show);
       }, reject);
   });
-}
+} // show
 
 /**
- * [TermList description]
- * @param {[type]} result [description]
+ * The termlist command's result object.
  */
 var TermList = function(result) {
   for(var idx in result.termlist.list) {
@@ -321,7 +320,7 @@ var TermList = function(result) {
 }
 
 /**
- * [termlist description]
+ * Executes the termlist command.
  * @return {Promise}       
  */
 Pazpar2.prototype.termlist = function() {
@@ -342,7 +341,7 @@ Pazpar2.prototype.termlist = function() {
       }, reject);
 
   });
-}
+} // termlist
 
 /**
  * A wrapper for ping that makes sense when checking 
