@@ -1,9 +1,9 @@
 var http = require('http')
-  ,util = require('util')
-  ,_ = require('underscore')
-  ,q = require('q')
-  ,querystring = require('querystring')
-  ,xml = require('xml2js')
+  , util = require('util')
+  , _ = require('underscore')
+  , q = require('q')
+  , querystring = require('querystring')
+  , xml = require('xml2js')
 ;
 
 /**
@@ -141,24 +141,12 @@ Pazpar2.prototype.ping = function(session) {
 /**
  * Executes the search command.
  * 
- * @param  {array|string} options the search options.
  * @return {Promise}       
  */
-Pazpar2.prototype.search = function(options) {
+Pazpar2.prototype.search = function(ccl, filter) {
   var self = this;
 
-  // options = {
-  //   query: '',
-  //   filter: '',
-  // }
-
-  if (typeof options === 'string') {
-    options = {
-      query: options
-    };
-  }
-
-  if (options.query === undefined || options.query === '') {
+  if (ccl === undefined || ccl === '') {
     throw new Error('Search query cannot must be defined and not empty.');
   }
 
@@ -167,10 +155,10 @@ Pazpar2.prototype.search = function(options) {
     var params = {
       command: 'search',
       session: self.session,
-      query: options.query
+      query: ccl
     };
 
-    if (options.filter) {
+    if (filter) {
       params.filter = filter;
     }
 
@@ -180,23 +168,6 @@ Pazpar2.prototype.search = function(options) {
       }, reject);
   });
 } // search
-
-/**
- * The stat command's result object.
- */
-var StatObject = function(result) {
-  this.activeclients = parseInt(result.activeclients[0]);
-  this.hits = parseInt(result.hits[0]);
-  this.records = parseInt(result.records[0]);
-  this.clients = parseInt(result.clients[0]);
-  this.unconnected = parseInt(result.unconnected[0]);
-  this.connecting = parseInt(result.connecting[0]);
-  this.working = parseInt(result.working[0]);
-  this.idle = parseInt(result.idle[0]);
-  this.failed = parseInt(result.failed[0]);
-  this.error = parseInt(result.error[0]);
-  this.progress = parseFloat(result.progress[0]);
-}
 
 /**
  * Executes the stat command.
@@ -214,53 +185,10 @@ Pazpar2.prototype.stat = function() {
 
     return get.call(self, params)
       .then(function(result) {
-        var stat = new StatObject(result.stat);
-        resolve(stat);
+        return resolve(result);
       }, reject);
   });
 } // stat
-
-/**
- * The show command's result object.
- */
-var ShowObject = function(result) {
-
-  this.status = result.status[0];
-  this.activeclients = parseInt(result.activeclients[0]);
-  this.merged = parseInt(result.merged[0]);
-  this.total = parseInt(result.total[0]);
-  this.start = parseInt(result.start[0]);
-  this.num = parseInt(result.num[0]);
-  this.hit = [];
-
-  for(var idxHit in result.hit) {
-    var newHit = {}
-      , oldHit = result.hit[idxHit];
-
-    newHit.title = oldHit['md-title'][0];
-    newHit.author = oldHit['md-author_070'];
-    newHit.publisher = oldHit['md-author_650'];
-    newHit.year = oldHit['md-year'][0];
-    newHit.count = parseInt(oldHit.count[0]);
-    newHit.relevance = parseInt(oldHit.relevance[0]);
-    newHit.recid = oldHit.recid[0];
-    newHit.recno = parseInt(oldHit.location[0]['md-recno'][0]);
-    newHit.holdings = [];
-
-    for(var idxLoc in oldHit.location) {
-      var holding = {}
-        , location = oldHit.location[idxLoc];
-
-      holding.source = location.$.id;
-      holding.checksum = location.$.checksum;
-      holding.digital = location['md-digital'];
-
-      newHit.holdings.push(holding);
-    }
-
-    this.hit.push(newHit);
-  }
-}
 
 /**
  * Executes the show command.
@@ -295,30 +223,10 @@ Pazpar2.prototype.show = function(options) {
 
     return get.call(self, params)
       .then(function(result) {
-        var show = new ShowObject(result.show);
-        resolve(show);
+        return resolve(result);
       }, reject);
   });
 } // show
-
-/**
- * The termlist command's result object.
- */
-var TermList = function(result) {
-  for(var idx in result.termlist.list) {
-    var termName = result.termlist.list[idx].$.name
-      , items = result.termlist.list[idx].term;
-
-    this[termName] = [];
-    for(var idxItem in items) {
-
-      var item = {};
-      item[items[idxItem].name[0]] = parseInt(items[idxItem].frequency[0]);
-
-      this[termName].push(item);
-    }
-  }
-}
 
 /**
  * Executes the termlist command.
@@ -337,8 +245,7 @@ Pazpar2.prototype.termlist = function() {
 
     return get.call(self, params)
       .then(function(result) {
-        var terms = new TermList(result);
-        resolve(terms);
+        return resolve(result);
       }, reject);
 
   });
@@ -356,7 +263,7 @@ Pazpar2.prototype.isSessionValid = function(session) {
   return q.Promise(function(resolve) {
     return self.ping(session || this.session)
       .then(function() {
-        resolve(true);
+        return resolve(true);
       }, function(e) {
         resolve(false);
       });
@@ -383,7 +290,7 @@ Pazpar2.prototype.safeInit = function() {
       .then(function(isValid) {
         if (isValid) {
           console.info(util.format('Reusing session [%s].', self.session));
-          resolve();
+          return resolve();
         } else {
           console.warn(util.format('Session [%s] is not valid. Creating a new one.', self.session));
 

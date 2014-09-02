@@ -42,7 +42,6 @@ describe('Parpar2', function() {
 
   it('shows top records', function(done) {
     pz2.show().then(function(o) {
-      console.log(o);
       done();
     }, function(err) {
       done(err);
