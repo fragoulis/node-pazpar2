@@ -1,6 +1,6 @@
 {
   "name": "pazpar2",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Pazpar2 client",
   "main": "index.js",
   "scripts": {
