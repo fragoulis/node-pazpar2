@@ -1,13 +1,11 @@
-node-pazpar2
+pazpar2
 ============
 
 An implementation of the Pazpar2 API for Node.js using `q` promises.
 
-**Current version: 0.1.0**
-
 ## Installation
 
-`npm install node-pazpar2 --save`
+`npm install pazpar2 --save`
 
 ## Usage
 
@@ -27,4 +25,9 @@ pz2.init().then(function() {
 
 ## Release History
 
-* 0.1.0 Initial release
+* 0.1.2
+ * Removed empty closures
+* 0.1.1
+ * Removed the custom structured objects for `stat`, `show` and `termlist`.
+* 0.1.0
+ * Initial release

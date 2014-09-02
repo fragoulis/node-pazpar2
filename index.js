@@ -163,9 +163,7 @@ Pazpar2.prototype.search = function(ccl, filter) {
     }
 
     return get.call(self, params)
-      .then(function(result) {
-        resolve(result);
-      }, reject);
+      .then(resolve, reject);
   });
 } // search
 
@@ -184,9 +182,7 @@ Pazpar2.prototype.stat = function() {
     };
 
     return get.call(self, params)
-      .then(function(result) {
-        return resolve(result);
-      }, reject);
+      .then(resolve, reject);
   });
 } // stat
 
@@ -222,9 +218,7 @@ Pazpar2.prototype.show = function(options) {
     };
 
     return get.call(self, params)
-      .then(function(result) {
-        return resolve(result);
-      }, reject);
+      .then(resolve, reject);
   });
 } // show
 
@@ -244,9 +238,7 @@ Pazpar2.prototype.termlist = function() {
     }
 
     return get.call(self, params)
-      .then(function(result) {
-        return resolve(result);
-      }, reject);
+      .then(resolve, reject);
 
   });
 } // termlist
