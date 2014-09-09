@@ -4,7 +4,8 @@ var http = require('http')
   , q = require('q')
   , querystring = require('querystring')
   , xml = require('xml2js')
-;
+  , ip = require('ip')
+  ;
 
 /**
  * Application's default settings
@@ -13,6 +14,7 @@ var http = require('http')
 var defaultSettings = {
   keepAlive: 50000,
   request: {
+    url: 'http://' + ip.address() + '/pazpar2/search.pz2',
     hostname: 'localhost',
     port: '9004',
     path: '/search.pz2',
@@ -45,23 +47,22 @@ var Pazpar2 = function(options) {
  * @param  {[type]} query         [description]
  * @return {[type]}               [description]
  */
-var get = function(query) {
+var get = function(query, xml2json) {
   var options = _.clone(this.requestOptions);
   options.path += '?' + querystring.stringify(query);
+
+  xml2json = xml2json === undefined ? true : xml2json;
 
   var self = this;
   return q.Promise(function(resolve, reject) {
 
     http.get(options, function(response) {
       response.on('data', function(data) {
-        xml.parseString(data, function(err, result) {
-
-          if (result.error) {
-            reject(new Error(util.format('Pazpar2 (%s): %s [%s]', result.error.$.code, result.error.$.msg, querystring.stringify(query))));
-          } else {
-            resolve(result);
-          }
-        });
+        if (xml2json) {
+          parseResponseXmlToJson(data, resolve, reject);
+        } else {
+          resolve(data);
+        }
       });
     }).on('error', function(e) {
       reject(new Error(util.format('Pazpar2: %s', e.message)));
@@ -69,6 +70,18 @@ var get = function(query) {
 
   });
 } // get
+
+var parseResponseXmlToJson = function(data, resolve, reject) {
+  xml.parseString(data, function(err, result) {
+    if (err) {
+      reject(new Error(err));
+    } else if (result.error) {
+      reject(new Error(util.format('Pazpar2 (%s): %s [%s]', result.error.$.code, result.error.$.msg, querystring.stringify(query))));
+    } else {
+      resolve(result);
+    }
+  });
+}
 
 /**
  * [isInitialized description]
@@ -99,12 +112,12 @@ Pazpar2.prototype.init = function() {
     return get.call(self, params)
       .then(function(result) {
         self.createdAt = new Date().toUTCString();
-        self.session = result.init.session;
-        self.keepAlive = result.init.keepAlive;
+        self.session = result.init.session[0];
+        self.keepAlive = parseInt(result.init.keepAlive[0]);
 
         console.log('Pazpar2 session initialized [%s] @ %s', self.session, self.createdAt);
 
-        resolve(result);
+        resolve(self);
       }, reject);
   });
 } // init
@@ -242,6 +255,32 @@ Pazpar2.prototype.termlist = function() {
 
   });
 } // termlist
+
+/**
+ * Loads a single record.
+ * 
+ * @param  {String} id 
+ * @return {Promise}    
+ */
+Pazpar2.prototype.record = function(id, offset) {
+  var self = this;
+  
+  return q.Promise(function(resolve, reject) {
+
+    var params = {
+        command: 'record'
+      , session: self.session
+      , id: id
+    };
+
+    if (offset !== undefined) {
+      params.offset = offset;
+    }
+
+    return get.call(self, params, offset === undefined)
+      .then(resolve, reject);
+  });
+} // record
 
 /**
  * A wrapper for ping that makes sense when checking 

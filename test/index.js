@@ -4,7 +4,7 @@ var assert = require('assert');
 describe('Parpar2', function() {
 
   var pz2 = new Pazpar2({
-    session: '2260237',
+    session: '246404645',
     terms: ['subject', 'author_070'],
   });
 
@@ -24,9 +24,9 @@ describe('Parpar2', function() {
     });
   });
 
-  it('searches for "ti=saint"', function(done) {
-    pz2.search("george").then(function(o) {
-      setTimeout(done, 1800);
+  it('searches for "george"', function(done) {
+    pz2.search("ti=saint").then(function(o) {
+      setTimeout(done, 2000);
     }, function(err) {
       done(err);
     });
@@ -40,8 +40,10 @@ describe('Parpar2', function() {
     });
   });
 
-  it('shows top records', function(done) {
+  var record = null;
+  it('shows the records', function(done) {
     pz2.show().then(function(o) {
+      record = o.show.hit[0];
       done();
     }, function(err) {
       done(err);
@@ -54,6 +56,20 @@ describe('Parpar2', function() {
     }, function(err) {
       done(err);
     });
+  });
+
+  it('shows the first record', function(done) {
+
+    if (record === null) {
+      done('Record not set.');
+    }
+
+    pz2.record(record.recid[0], 0).then(function(o) {
+      console.log(o);
+      done();
+    }, function(err) {
+      done(err);
+    })
   });
 
 });
