@@ -38,6 +38,8 @@ record | q.Promise |
 
 ## Release History
 
+* 0.1.3
+ * Implemented `record`.
 * 0.1.2
  * Removed empty closures
 * 0.1.1
