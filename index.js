@@ -77,7 +77,8 @@ var parseResponseXmlToJson = function(data, resolve, reject, query) {
       reject(new Error(err));
     } else if (result.error) {
 
-      switch(result.error.$.code) {
+      var code = parseInt(result.error.$.code);
+      switch(code) {
         case 7: // Missing record
           resolve(result);
           break;
