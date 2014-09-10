@@ -59,7 +59,7 @@ var get = function(query, xml2json) {
     http.get(options, function(response) {
       response.on('data', function(data) {
         if (xml2json) {
-          parseResponseXmlToJson(data, resolve, reject);
+          parseResponseXmlToJson(data, resolve, reject, query);
         } else {
           resolve(data);
         }
@@ -71,7 +71,7 @@ var get = function(query, xml2json) {
   });
 } // get
 
-var parseResponseXmlToJson = function(data, resolve, reject) {
+var parseResponseXmlToJson = function(data, resolve, reject, query) {
   xml.parseString(data, function(err, result) {
     if (err) {
       reject(new Error(err));
