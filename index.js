@@ -76,7 +76,15 @@ var parseResponseXmlToJson = function(data, resolve, reject, query) {
     if (err) {
       reject(new Error(err));
     } else if (result.error) {
-      reject(new Error(util.format('Pazpar2 (%s): %s [%s]', result.error.$.code, result.error.$.msg, querystring.stringify(query))));
+
+      switch(result.error.$.code) {
+        case 7: // Missing record
+          resolve(result);
+          break;
+        default:
+          reject(new Error(util.format('Pazpar2 (%s): %s [%s]', result.error.$.code, result.error.$.msg, querystring.stringify(query))));
+      }
+      
     } else {
       resolve(result);
     }
