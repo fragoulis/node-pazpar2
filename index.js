@@ -3,7 +3,6 @@ var http = require('http')
   , _ = require('underscore')
   , q = require('q')
   , querystring = require('querystring')
-  , xml = require('xml2js')
   , ip = require('ip')
   ;
 
@@ -13,8 +12,8 @@ var http = require('http')
  */
 var defaultSettings = {
   keepAlive: 50000,
+  url: 'http://' + ip.address() + '/pazpar2/search.pz2',
   request: {
-    url: 'http://' + ip.address() + '/pazpar2/search.pz2',
     hostname: 'localhost',
     port: '9004',
     path: '/search.pz2',
@@ -31,15 +30,9 @@ var defaultSettings = {
  * Constructor
  */
 var Pazpar2 = function(options) {
-
   options = options || {};
-
-  this.requestOptions = _.clone(defaultSettings.request);
-  this.session = options.session || null;
-  this.keepAlive = defaultSettings.keepAlive;
-  this.terms = options.terms || [];
-  this.createdAt = null;
-  this.updatedAt = null;
+  this.keepAlive = options.keepAlive || defaultSettings.keepAlive;
+  this.requestOptions = defaultSettings.request;
 }
 
 /**
@@ -47,23 +40,20 @@ var Pazpar2 = function(options) {
  * @param  {[type]} query         [description]
  * @return {[type]}               [description]
  */
-var get = function(query, xml2json) {
+var get = function(query) {
   var options = _.clone(this.requestOptions);
-  options.path += '?' + querystring.stringify(query);
+  query.keepAlive = this.keepAlive
 
-  xml2json = xml2json === undefined ? true : xml2json;
+  var qs = querystring.stringify(query);
+  options.path += '?' + qs
 
   var self = this;
   return q.Promise(function(resolve, reject) {
 
+    console.log('Pazpar2: %s', qs);
+
     http.get(options, function(response) {
-      response.on('data', function(data) {
-        if (xml2json) {
-          parseResponseXmlToJson(data, resolve, reject, query);
-        } else {
-          resolve(data);
-        }
-      });
+      response.on('data', resolve);
     }).on('error', function(e) {
       reject(new Error(util.format('Pazpar2: %s', e.message)));
     });
@@ -71,45 +61,12 @@ var get = function(query, xml2json) {
   });
 } // get
 
-var parseResponseXmlToJson = function(data, resolve, reject, query) {
-  xml.parseString(data, function(err, result) {
-    if (err) {
-      reject(new Error(err));
-    } else if (result.error) {
-
-      var code = parseInt(result.error.$.code);
-      switch(code) {
-        case 7: // Missing record
-          resolve(result);
-          break;
-        default:
-          reject(new Error(util.format('Pazpar2 (%s): %s [%s]', result.error.$.code, result.error.$.msg, querystring.stringify(query))));
-      }
-      
-    } else {
-      resolve(result);
-    }
-  });
-}
-
-/**
- * [isInitialized description]
- * @return {Boolean} [description]
- */
-var isInitialized = function() {
-  return (this.session !== null);
-}
-
 /**
  * Initialiazes a new session with the pz2 server.
  * 
  * @return {Promise}       
  */
 Pazpar2.prototype.init = function() {
-
-  if (isInitialized.call(this)) {
-    throw new Error(util.format('Session is already set [%s]', this.session));
-  }
 
   var self = this;
   return q.Promise(function(resolve, reject) {
@@ -119,15 +76,7 @@ Pazpar2.prototype.init = function() {
     };
 
     return get.call(self, params)
-      .then(function(result) {
-        self.createdAt = new Date().toUTCString();
-        self.session = result.init.session[0];
-        self.keepAlive = parseInt(result.init.keepAlive[0]);
-
-        console.log('Pazpar2 session initialized [%s] @ %s', self.session, self.createdAt);
-
-        resolve(self);
-      }, reject);
+      .then(resolve, reject);
   });
 } // init
 
@@ -144,19 +93,11 @@ Pazpar2.prototype.ping = function(session) {
     
     var params = {
       command: 'ping',
-      session: session || self.session
+      session: session
     };
 
     return get.call(self, params)
-      .then(function(result) {
-
-        // Unless we are pinging the object's session
-        // do not by mistake udpate the last ping date.
-        if (session === self.session)
-          self.updatedAt = new Date().toUTCString();
-
-        resolve(result);
-      }, reject);
+      .then(resolve, reject);
   });  
 } // ping
 
@@ -165,7 +106,7 @@ Pazpar2.prototype.ping = function(session) {
  * 
  * @return {Promise}       
  */
-Pazpar2.prototype.search = function(ccl, filter) {
+Pazpar2.prototype.search = function(session, ccl, filter) {
   var self = this;
 
   if (ccl === undefined || ccl === '') {
@@ -176,7 +117,7 @@ Pazpar2.prototype.search = function(ccl, filter) {
 
     var params = {
       command: 'search',
-      session: self.session,
+      session: session,
       query: ccl
     };
 
@@ -194,13 +135,13 @@ Pazpar2.prototype.search = function(ccl, filter) {
  * 
  * @return {Promise}       
  */
-Pazpar2.prototype.stat = function() {
+Pazpar2.prototype.stat = function(session) {
   var self = this;
   return q.Promise(function(resolve, reject) {
     
     var params = {
       command: 'stat',
-      session: self.session
+      session: session
     };
 
     return get.call(self, params)
@@ -213,7 +154,7 @@ Pazpar2.prototype.stat = function() {
  * 
  * @return {Promise}       
  */
-Pazpar2.prototype.show = function(options) {
+Pazpar2.prototype.show = function(session, options) {
   var self = this
     , options = options || {}
     ;
@@ -231,7 +172,7 @@ Pazpar2.prototype.show = function(options) {
 
     var params = {
       command: 'show',
-      session: self.session,
+      session: session,
       block: options.block || defaultSettings.show.block,
       num: options.num || defaultSettings.show.num,
       sort: options.sort || defaultSettings.show.sort,
@@ -246,17 +187,17 @@ Pazpar2.prototype.show = function(options) {
 
 /**
  * Executes the termlist command.
- * @return {Promise}       
+ * @return {Promise}
  */
-Pazpar2.prototype.termlist = function() {
+Pazpar2.prototype.termlist = function(session, terms) {
   var self = this;
 
   return q.Promise(function(resolve, reject) {
 
     var params = {
       command: 'termlist',
-      session: self.session,
-      name: self.terms.join(',')
+      session: session,
+      name: typeof terms === 'String' ? terms.join(',') : terms
     }
 
     return get.call(self, params)
@@ -271,14 +212,14 @@ Pazpar2.prototype.termlist = function() {
  * @param  {String} id 
  * @return {Promise}    
  */
-Pazpar2.prototype.record = function(id, offset) {
+Pazpar2.prototype.record = function(session, id, offset) {
   var self = this;
   
   return q.Promise(function(resolve, reject) {
 
     var params = {
         command: 'record'
-      , session: self.session
+      , session: session
       , id: id
     };
 
@@ -286,62 +227,9 @@ Pazpar2.prototype.record = function(id, offset) {
       params.offset = offset;
     }
 
-    return get.call(self, params, offset === undefined)
+    return get.call(self, params)
       .then(resolve, reject);
   });
 } // record
-
-/**
- * A wrapper for ping that makes sense when checking 
- * to see if a session is alive.
- * 
- * @param  {[type]}  session [description]
- * @return {Boolean}         [description]
- */
-Pazpar2.prototype.isSessionValid = function(session) {
-  var self = this;
-  return q.Promise(function(resolve) {
-    return self.ping(session || this.session)
-      .then(function() {
-        return resolve(true);
-      }, function(e) {
-        resolve(false);
-      });
-  });
-} // isSessionValid
-
-/**
- * Initialiazes a new session with the pz2 server but
- * also handles an expired session.
- * It checks for session validity and if not valid it creates a new session.
- * 
- * @return {Promise}       
- */
-Pazpar2.prototype.safeInit = function() {
-
-  if (!isInitialized.call(this)) {
-    return this.init();
-  }
-
-  var self = this;
-  return q.Promise(function(resolve) {
-
-    return self.isSessionValid()
-      .then(function(isValid) {
-        if (isValid) {
-          console.info(util.format('Reusing session [%s].', self.session));
-          return resolve();
-        } else {
-          console.warn(util.format('Session [%s] is not valid. Creating a new one.', self.session));
-
-          // Invalidate the variable
-          self.session = null;
-
-          return self.init().then(resolve);
-        }
-      });
-
-  });
-} // safeInit
 
 module.exports = Pazpar2;

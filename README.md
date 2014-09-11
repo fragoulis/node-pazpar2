@@ -24,7 +24,6 @@ pz2.init().then(function() {
 Name | Returns | Description
 ---- | :-----: | -----------
 init | q.Promise | Initializes a session
-safeInit | q.Promise | Guarantees a valid session on return
 ping | q.Promise | 
 search | q.Promise | 
 stat | q.Promise | 
@@ -38,6 +37,8 @@ record | q.Promise |
 
 ## Release History
 
+* 0.1.4
+ * Moved out xml parsing stuff. Left the class for bare pz2 calls only.
 * 0.1.3
  * Implemented `record`.
 * 0.1.2
