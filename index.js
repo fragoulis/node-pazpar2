@@ -31,6 +31,7 @@ var defaultSettings = {
  */
 var Pazpar2 = function(options) {
   options = options || {};
+  this.url = defaultSettings.url;
   this.keepAlive = options.keepAlive || defaultSettings.keepAlive;
   this.requestOptions = defaultSettings.request;
 }
@@ -110,7 +111,7 @@ Pazpar2.prototype.search = function(session, ccl, filter) {
   var self = this;
 
   if (ccl === undefined || ccl === '') {
-    throw new Error('Search query cannot must be defined and not empty.');
+    throw new Error('Search query must be defined and not empty.');
   }
 
   return q.Promise(function(resolve, reject) {
