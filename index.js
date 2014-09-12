@@ -198,7 +198,7 @@ Pazpar2.prototype.termlist = function(session, terms) {
     var params = {
       command: 'termlist',
       session: session,
-      name: typeof terms === 'String' ? terms.join(',') : terms
+      name: typeof terms === 'String' ? terms : terms.join(',')
     }
 
     return get.call(self, params)
