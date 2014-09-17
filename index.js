@@ -53,8 +53,20 @@ var get = function(query) {
 
     console.log('Pazpar2: %s', qs);
 
-    http.get(options, function(response) {
-      response.on('data', resolve);
+    http.get(options, function(res) {
+
+      var data = [];
+
+      // res.setEncoding('utf8');
+      res.on('data', function(chunk) {
+        data.push(chunk);
+      });
+
+      res.on('end', function() {
+        resolve(data.join(''));
+        data = [];
+      });
+
     }).on('error', function(e) {
       reject(new Error(util.format('Pazpar2: %s', e.message)));
     });
